@@ -15,7 +15,7 @@
     "sourceType": "module"
   },
   "rules": {
-    "no-unused-vars": "off",
+    "no-unused-vars": "error",
     "prefer-const": "error"
   },
   "overrides": [
@@ -23,6 +23,7 @@
       "files": ["*.ts"],
       "rules": {
         "no-undef": "off",
+        "no-unused-vars": "off",
         "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }]
       }
     }

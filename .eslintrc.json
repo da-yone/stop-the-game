@@ -15,18 +15,15 @@
     "sourceType": "module"
   },
   "rules": {
-    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
     "no-unused-vars": "off",
     "prefer-const": "error"
   },
   "overrides": [
     {
       "files": ["*.ts"],
-      "extends": [
-        "eslint:recommended"
-      ],
       "rules": {
-        "no-undef": "off"
+        "no-undef": "off",
+        "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }]
       }
     }
   ]

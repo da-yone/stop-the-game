@@ -42,7 +42,6 @@
   "engines": {
     "node": ">=14.0.0"
   },
-  "os": ["win32", "darwin"],
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",

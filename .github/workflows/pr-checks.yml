@@ -22,18 +22,8 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Run ESLint with annotations
-      run: |
-        npm run lint -- --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif
-        echo "ESLint completed"
-      continue-on-error: true
-
-    - name: Upload ESLint results to GitHub
-      uses: github/codeql-action/upload-sarif@v2
-      if: always()
-      with:
-        sarif_file: eslint-results.sarif
-        wait-for-processing: true
+    - name: Run ESLint
+      run: npm run lint
 
     - name: TypeScript strict check
       run: npm run type-check

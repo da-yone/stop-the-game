@@ -24,7 +24,7 @@
     "play-sound": "^1.1.6",
     "winston": "^3.11.0",
     "keypress": "^0.2.1",
-    "systray": "^1.0.5"
+    "systray2": "^2.0.4"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
@@ -42,7 +42,6 @@
   "engines": {
     "node": ">=14.0.0"
   },
-  "os": ["win32", "darwin"],
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
@@ -51,6 +50,15 @@
     "collectCoverageFrom": [
       "src/**/*.ts",
       "!src/**/*.d.ts"
-    ]
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 90,
+        "functions": 90,
+        "lines": 90,
+        "statements": 90
+      }
+    },
+    "coverageReporters": ["text", "lcov", "html"]
   }
 }

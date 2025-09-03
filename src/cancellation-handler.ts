@@ -74,4 +74,9 @@ export class CancellationHandler {
     
     this.stop();
   }
+
+  // Protected method for testing purposes
+  protected simulateKeyPress(reason: string = 'test'): void {
+    this.triggerCancellation(reason);
+  }
 }

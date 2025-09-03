@@ -85,11 +85,17 @@ describe('CancellationHandler', () => {
   });
 
   describe('onCancellation', () => {
-    it('should register cancellation callback', () => {
-      const mockCallback = jest.fn();
-      handler.onCancellation(mockCallback);
+    it('should register cancellation callback', (done) => {
+      const mockCallback = jest.fn(() => {
+        expect(mockCallback).toHaveBeenCalledWith('test');
+        done();
+      });
       
-      expect(handler['callback']).toBe(mockCallback);
+      handler.onCancellation(mockCallback);
+      handler.start();
+      
+      // Use protected method for testing
+      handler['simulateKeyPress']('test');
     });
   });
 
@@ -103,7 +109,7 @@ describe('CancellationHandler', () => {
       handler.onCancellation(mockCallback);
       handler.start();
       
-      handler['triggerCancellation']('manual');
+      handler['simulateKeyPress']('manual');
     });
 
     it('should log cancellation trigger', async () => {
@@ -111,7 +117,7 @@ describe('CancellationHandler', () => {
       handler.onCancellation(mockCallback);
       handler.start();
       
-      handler['triggerCancellation']('manual');
+      handler['simulateKeyPress']('manual');
       await mockLogger.waitForWrites();
       
       const logContent = fs.readFileSync(testLogFile, 'utf8');

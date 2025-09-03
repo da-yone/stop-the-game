@@ -1,10 +1,52 @@
-import { CancellationHandler } from '../src/cancellation-handler';
+import { CancellationHandler, KeypressHandler } from '../src/cancellation-handler';
 import { Logger } from '../src/logger';
 import * as fs from 'fs';
+
+class MockKeypressHandler implements KeypressHandler {
+  private keyPressCallback: ((ch: string, key: any) => void) | null = null;
+  private isRawMode: boolean = false;
+  private isResumed: boolean = false;
+
+  onKeyPress(callback: (ch: string, key: any) => void): void {
+    this.keyPressCallback = callback;
+  }
+
+  setRawMode(mode: boolean): void {
+    this.isRawMode = mode;
+  }
+
+  resume(): void {
+    this.isResumed = true;
+  }
+
+  pause(): void {
+    this.isResumed = false;
+  }
+
+  removeAllListeners(_event: string): void {
+    this.keyPressCallback = null;
+  }
+
+  // Test utility methods
+  simulateKeyPress(ch: string = '', key: any = {}): void {
+    if (this.keyPressCallback) {
+      this.keyPressCallback(ch, key);
+    }
+  }
+
+  getRawMode(): boolean {
+    return this.isRawMode;
+  }
+
+  getResumed(): boolean {
+    return this.isResumed;
+  }
+}
 
 describe('CancellationHandler', () => {
   let handler: CancellationHandler;
   let mockLogger: Logger;
+  let mockKeypressHandler: MockKeypressHandler;
   const testLogFile = './logs/test-cancellation.log';
 
   beforeEach(() => {
@@ -12,7 +54,8 @@ describe('CancellationHandler', () => {
       fs.unlinkSync(testLogFile);
     }
     mockLogger = new Logger(testLogFile);
-    handler = new CancellationHandler(mockLogger);
+    mockKeypressHandler = new MockKeypressHandler();
+    handler = new CancellationHandler(mockLogger, mockKeypressHandler);
   });
 
   afterEach(() => {
@@ -87,15 +130,15 @@ describe('CancellationHandler', () => {
   describe('onCancellation', () => {
     it('should register cancellation callback', (done) => {
       const mockCallback = jest.fn(() => {
-        expect(mockCallback).toHaveBeenCalledWith('test');
+        expect(mockCallback).toHaveBeenCalledWith('manual');
         done();
       });
       
       handler.onCancellation(mockCallback);
       handler.start();
       
-      // Use protected method for testing
-      handler['simulateKeyPress']('test');
+      // Use mock keypress handler to simulate key press
+      mockKeypressHandler.simulateKeyPress('', {});
     });
   });
 
@@ -109,7 +152,7 @@ describe('CancellationHandler', () => {
       handler.onCancellation(mockCallback);
       handler.start();
       
-      handler['simulateKeyPress']('manual');
+      mockKeypressHandler.simulateKeyPress('', {});
     });
 
     it('should log cancellation trigger', async () => {
@@ -117,11 +160,25 @@ describe('CancellationHandler', () => {
       handler.onCancellation(mockCallback);
       handler.start();
       
-      handler['simulateKeyPress']('manual');
+      mockKeypressHandler.simulateKeyPress('', {});
       await mockLogger.waitForWrites();
       
       const logContent = fs.readFileSync(testLogFile, 'utf8');
       expect(logContent).toContain('Alarm cancelled by user input');
+    });
+
+    it('should handle Ctrl+C correctly', async () => {
+      const exitSpy = jest.spyOn(process, 'exit').mockImplementation(() => {
+        throw new Error('process.exit called');
+      });
+      
+      handler.start();
+      
+      expect(() => {
+        mockKeypressHandler.simulateKeyPress('', { ctrl: true, name: 'c' });
+      }).toThrow('process.exit called');
+      
+      exitSpy.mockRestore();
     });
   });
 });

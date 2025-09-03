@@ -1,14 +1,51 @@
 import keypress from 'keypress';
 import { Logger } from './logger';
 
+export interface KeypressHandler {
+  onKeyPress: (callback: (ch: string, key: any) => void) => void;
+  setRawMode: (mode: boolean) => void;
+  resume: () => void;
+  pause: () => void;
+  removeAllListeners: (event: string) => void;
+}
+
+export class DefaultKeypressHandler implements KeypressHandler {
+  constructor() {
+    keypress(process.stdin);
+  }
+
+  onKeyPress(callback: (ch: string, key: any) => void): void {
+    process.stdin.on('keypress', callback);
+  }
+
+  setRawMode(mode: boolean): void {
+    if (process.stdin.setRawMode && typeof process.stdin.setRawMode === 'function') {
+      process.stdin.setRawMode(mode);
+    }
+  }
+
+  resume(): void {
+    process.stdin.resume();
+  }
+
+  pause(): void {
+    process.stdin.pause();
+  }
+
+  removeAllListeners(event: string): void {
+    process.stdin.removeAllListeners(event);
+  }
+}
+
 export class CancellationHandler {
   private listening: boolean = false;
   private callback: ((reason: string) => void) | null = null;
   private logger: Logger;
+  private keypressHandler: KeypressHandler;
 
-  constructor(logger: Logger) {
+  constructor(logger: Logger, keypressHandler?: KeypressHandler) {
     this.logger = logger;
-    keypress(process.stdin);
+    this.keypressHandler = keypressHandler || new DefaultKeypressHandler();
   }
 
   start(): void {
@@ -18,13 +55,9 @@ export class CancellationHandler {
     }
 
     this.listening = true;
-    
-    if (process.stdin.setRawMode && typeof process.stdin.setRawMode === 'function') {
-      process.stdin.setRawMode(true);
-    }
-    
-    process.stdin.resume();
-    process.stdin.on('keypress', this.handleKeyPress.bind(this));
+    this.keypressHandler.setRawMode(true);
+    this.keypressHandler.resume();
+    this.keypressHandler.onKeyPress(this.handleKeyPress.bind(this));
     
     this.logger.info('Cancellation handler started', {
       message: 'Press any key to cancel alarm'
@@ -38,13 +71,9 @@ export class CancellationHandler {
     }
 
     this.listening = false;
-    process.stdin.removeAllListeners('keypress');
-    
-    if (process.stdin.setRawMode && typeof process.stdin.setRawMode === 'function') {
-      process.stdin.setRawMode(false);
-    }
-    
-    process.stdin.pause();
+    this.keypressHandler.removeAllListeners('keypress');
+    this.keypressHandler.setRawMode(false);
+    this.keypressHandler.pause();
     
     this.logger.info('Cancellation handler stopped');
   }
@@ -73,10 +102,5 @@ export class CancellationHandler {
     }
     
     this.stop();
-  }
-
-  // Protected method for testing purposes
-  protected simulateKeyPress(reason: string = 'test'): void {
-    this.triggerCancellation(reason);
   }
 }

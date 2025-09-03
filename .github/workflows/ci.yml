@@ -12,6 +12,9 @@ jobs:
 
     strategy:
       matrix:
+        # Using Node.js 18.x only as per project requirements
+        # While testing on multiple versions improves compatibility,
+        # the project owner has specifically requested to use 18.x only
         node-version: [18.x]
 
     steps:

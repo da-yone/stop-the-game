@@ -8,6 +8,13 @@ const execAsync = promisify(exec);
 export class SleepManager {
   private options: Required<SleepManagerOptions>;
   private logger: Logger;
+  
+  // PowerShell command to put Windows PC to sleep
+  private readonly POWERSHELL_SLEEP_COMMAND = [
+    'Add-Type -AssemblyName System.Windows.Forms;',
+    '[System.Windows.Forms.Application]::SetSuspendState(',
+    '[System.Windows.Forms.PowerState]::Suspend, $false, $true)'
+  ].join(' ');
 
   constructor(logger: Logger, options?: Partial<SleepManagerOptions>) {
     this.logger = logger;
@@ -79,7 +86,7 @@ export class SleepManager {
   private buildSleepCommand(): string {
     switch (this.options.method) {
       case 'powershell':
-        return 'powershell.exe -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Application]::SetSuspendState([System.Windows.Forms.PowerState]::Suspend, $false, $true)"';
+        return `powershell.exe -Command "${this.POWERSHELL_SLEEP_COMMAND}"`;
       case 'rundll32':
         return 'rundll32.exe powrprof.dll,SetSuspendState 0,1,0';
       default:

@@ -88,7 +88,8 @@ export class CancellationHandler {
 
   private handleKeyPress(_ch: string, key: any): void {
     if (key && (key.ctrl && key.name === 'c')) {
-      process.exit();
+      this.triggerCancellation('ctrl-c');
+      return;
     }
     
     this.triggerCancellation('manual');

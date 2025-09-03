@@ -168,17 +168,18 @@ describe('CancellationHandler', () => {
     });
 
     it('should handle Ctrl+C correctly', async () => {
-      const exitSpy = jest.spyOn(process, 'exit').mockImplementation(() => {
-        throw new Error('process.exit called');
-      });
-      
+      const mockCallback = jest.fn();
+      handler.onCancellation(mockCallback);
       handler.start();
       
-      expect(() => {
-        mockKeypressHandler.simulateKeyPress('', { ctrl: true, name: 'c' });
-      }).toThrow('process.exit called');
+      mockKeypressHandler.simulateKeyPress('', { ctrl: true, name: 'c' });
+      await mockLogger.waitForWrites();
       
-      exitSpy.mockRestore();
+      expect(mockCallback).toHaveBeenCalledWith('ctrl-c');
+      
+      const logContent = fs.readFileSync(testLogFile, 'utf8');
+      expect(logContent).toContain('Alarm cancelled by user input');
+      expect(logContent).toContain('ctrl-c');
     });
   });
 });

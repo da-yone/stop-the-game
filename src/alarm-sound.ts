@@ -32,6 +32,7 @@ export class AlarmSound {
   private audioPlayer: AudioPlayer;
   private playProcess: any = null;
   private timer: NodeJS.Timeout | null = null;
+  private countdown: NodeJS.Timeout | null = null;
   private options: Required<AlarmSoundOptions>;
   private logger: Logger;
   private remainingTime: number = 0;
@@ -69,11 +70,21 @@ export class AlarmSound {
     const playerOptions = this.getPlayerOptions();
     
     this.playProcess = this.audioPlayer.play(soundFile, playerOptions, (err: Error | null) => {
-      if (err && err.message && !err.message.includes('killed')) {
-        this.logger.error('Failed to play alarm sound', { 
-          error: err.message,
-          soundFile 
-        });
+      if (err) {
+        // Check if error is from intentional process termination
+        const isKillError = err.message && (
+          err.message.includes('killed') || 
+          err.message.includes('SIGTERM') ||
+          err.message.includes('SIGKILL')
+        );
+        
+        if (!isKillError) {
+          this.logger.error('Failed to play alarm sound', { 
+            error: err.message,
+            soundFile,
+            errorCode: (err as any).code
+          });
+        }
       }
     });
 
@@ -81,10 +92,10 @@ export class AlarmSound {
       this.stop();
     }, this.options.duration * 1000);
 
-    const countdown = setInterval(() => {
+    this.countdown = setInterval(() => {
       this.remainingTime--;
       if (this.remainingTime <= 0) {
-        clearInterval(countdown);
+        this.clearCountdown();
       }
     }, 1000);
 
@@ -123,9 +134,17 @@ export class AlarmSound {
       this.timer = null;
     }
 
+    this.clearCountdown();
     this.playProcess = null;
     this.remainingTime = 0;
     this.logger.info('Alarm sound stopped');
+  }
+
+  private clearCountdown(): void {
+    if (this.countdown) {
+      clearInterval(this.countdown);
+      this.countdown = null;
+    }
   }
 
   isPlaying(): boolean {
